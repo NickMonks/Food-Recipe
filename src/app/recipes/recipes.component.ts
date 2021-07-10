@@ -5,24 +5,14 @@ import { RecipeService } from './recipe.service';
 @Component({
   selector: 'app-recipes',
   templateUrl: './recipes.component.html',
-  styleUrls: ['./recipes.component.css'],
-  providers: [RecipeService]
+  styleUrls: ['./recipes.component.css']
 })
 export class RecipesComponent implements OnInit {
-
-  selectedRecipe: Recipe;
   
-  constructor(private recipeService: RecipeService) { }
+  constructor() { }
 
   ngOnInit(): void {
-    // create an event emitter in the service, and we subscribe in the OnInit method,
-    // and use the data emitted to do a callback
-
-    this.recipeService.recipeSelected.subscribe(
-      (recipe: Recipe) => {
-        this.selectedRecipe = recipe
-      }
-    );
+    
   }
 
 }
