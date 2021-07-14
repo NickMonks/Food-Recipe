@@ -1,13 +1,16 @@
 import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpParams } from "@angular/common/http";
 import { Recipe } from "../recipes/recipe.model";
 import { RecipeService } from "../recipes/recipe.service";
-import { map, tap } from 'rxjs/operators'
+import { exhaustMap, map, take, tap } from 'rxjs/operators'
+import { AuthService } from "../auth/auth.service";
 
 @Injectable({providedIn: 'root'})
 export class DataStorageService {
+
     constructor(private http: HttpClient,
-        private recipeService: RecipeService) {}
+        private recipeService: RecipeService,
+        private authService: AuthService) {}
 
     storeRecipes() {
         const recipes = this.recipeService.getRecipes();
@@ -21,19 +24,26 @@ export class DataStorageService {
     }
 
     fetchRecipes() {
-       return this.http
-        .get<Recipe[]>('https://food-recipe-e58d8-default-rtdb.europe-west1.firebasedatabase.app/recipes.json')
-        .pipe(map( recipes => {
-            // using a map to transform recipes in the case the recipes doesnt have ingredient.
-            // Dont confuse piped map with functional map of javascript, from an array
-            return recipes.map(recipe => {
-                // operator "..." is used to unroll the recipe elements
-                return {...recipe, ingredients: recipe.ingredients ? recipe.ingredients : []}
-            });
-        }), tap(recipes => {
-            // this is similar to a tee in linux; use the recipe for a different thing out of the subscription
-            this.recipeService.setRecipes(recipes)
-        })
-        )
+
+
+            return this.http
+                    .get<Recipe[]>(
+                        'https://food-recipe-e58d8-default-rtdb.europe-west1.firebasedatabase.app/recipes.json'
+                    )
+                    .pipe(
+                        map( recipes => {
+                                // using a map to transform recipes in the case the recipes doesnt have ingredient.
+                                // Dont confuse piped map with functional map of javascript, from an array
+                                return recipes.map(recipe => {
+                                    // operator "..." is used to unroll the recipe elements
+                                    return {...recipe, ingredients: recipe.ingredients ? recipe.ingredients : []}
+                                });
+                            }
+                        ), tap(recipes => {
+                                // this is similar to a tee in linux; use the recipe for a different thing out of the subscription
+                                this.recipeService.setRecipes(recipes)
+                            }
+                        )
+                    );
     }
 }

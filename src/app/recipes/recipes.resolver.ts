@@ -17,6 +17,7 @@ export class RecipesResolverService implements Resolve<Recipe[]> {
         // because we return an observable, it will subscribed by Angular automagically
         const recipes = this.recipesService.getRecipes();
         if (recipes.length === 0 ) {
+            
             return this.dataStorageService.fetchRecipes();
         } else {
             return recipes;
