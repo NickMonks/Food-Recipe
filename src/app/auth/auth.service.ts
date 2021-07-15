@@ -27,14 +27,29 @@ export class AuthService {
     // To achieve this we can use BehaviourSubject, will can store the state and therefore it can store variables throughout its lifetime. 
     // we initialise it with null and will store the token here
     userSubject = new BehaviorSubject<User>(null);
-    
+    private tokenExpirationTimer : any;
 
     constructor(private http: HttpClient, private router: Router){}
 
     logout() {
         // pass the user as null, so the application treats it as unauthenticated:
         this.userSubject.next(null);
-        this.router.navigate(['/auth'])
+        this.router.navigate(['/auth']);
+        // delete all data from local storage, since the token wont be active anymore
+        localStorage.removeItem('userData');
+
+        // we need to be careful not to delete the token if it didn't expire the session,
+        // since we use setTimeout to logout we dont want to do this if the user logs out manyally
+        if (this.tokenExpirationTimer) {
+            clearTimeout(this.tokenExpirationTimer);
+        }
+        this.tokenExpirationTimer = null;
+    }
+
+    autoLogout(expirationDuration : number) {
+        this.tokenExpirationTimer = setTimeout(() => {
+            this.logout();
+        }, expirationDuration);
     }
 
     signUp(email: string, password: string) {
@@ -73,8 +88,11 @@ export class AuthService {
             new Date(userData._tokenExpirationDate));
 
         if (loadedUser) {
-            console.log("hiiii")
             this.userSubject.next(loadedUser);
+            // update the time the token expires if we login again. If we dont do this, expirationDuration in setTimeout will
+            // restart its counting. 
+            const expirationDuration = new Date(userData._tokenExpirationDate).getTime() - new Date().getTime();
+            this.autoLogout(expirationDuration);
         }
 
 
@@ -111,12 +129,18 @@ export class AuthService {
                 token, 
                 expirationDate
             );
+            
+
+            // Emit the user. 
+            this.userSubject.next(user);
+
+            // It is important to notice that, once we create a new user, we want to auto logout since 
+            // it wont make sense to use the user anymore
+            this.autoLogout(expiresIn * 1000);
+
             // in order to provide persistent data storage for our token, we can use either cookies or localstorage.
             // we store our object and un-serialize it. we can retrieve this once our application restarts
             localStorage.setItem('userData', JSON.stringify(user));
-
-            // Emit the user
-            this.userSubject.next(user);
         
     }
 

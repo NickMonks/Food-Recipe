@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ComponentFactoryResolver, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { AlertComponent } from '../shared/alert/alert.component';
+import { PlaceholderDirective } from '../shared/placeholder/placeholder.directive';
 import { AuthResponseData, AuthService } from './auth.service';
 
 @Component({
@@ -15,8 +17,13 @@ export class AuthComponent implements OnInit {
   isLoading = false;
   error : string = null;
 
+  // ViewChild not also returns the reference; it also returns you the element of a type; in our case the Placeholder directive
+  // it will return the first ocrurence. 
+  @ViewChild(PlaceholderDirective, {static: false}) alertHost: PlaceholderDirective;
+
   constructor(private authService: AuthService,
-              private router: Router) { }
+              private router: Router,
+              private componentFactoryResolver: ComponentFactoryResolver) { }
 
   ngOnInit(): void {
     
@@ -24,6 +31,30 @@ export class AuthComponent implements OnInit {
 
   onSwitchMode() {
     this.isLoginMode = !this.isLoginMode
+  }
+
+  onHandleError() {
+    console.log(this.error)
+    this.error = null; // this will remove the condition of the ngIf and close the alert
+  }
+
+  private showErrorAlert(message: string) {
+    // dynamically create the alert component. to do so, we need to use the component factory resolver,
+    // which creates a factory that creates alerts
+   const alertComponentFactory = this.componentFactoryResolver.resolveComponentFactory(AlertComponent);
+
+   // tell angular were to insert component, you need to give the position to the DOM using the view reference
+   // because the PlaceholderDirective exposes the view container as an attribute in the constructor, we can access the element!
+   console.log(this.alertHost)
+   const hostViewContainerRef = this.alertHost.viewContainerRef
+
+   // clear anything rendered in the component before
+   hostViewContainerRef.clear();
+
+   hostViewContainerRef.createComponent(alertComponentFactory);
+
+
+
   }
 
   onSubmit(form: NgForm){
@@ -59,11 +90,10 @@ export class AuthComponent implements OnInit {
         this.router.navigate(['/recipes']);
       }, 
       // errorMessage retrieves the observable of throwError from the pipe 
-      errorMessage => {
-        console.log(errorMessage);
-        
+      errorMessage => {        
         this.error = errorMessage;
         this.isLoading = false;
+        this.showErrorAlert(errorMessage);
       }
     );
 
