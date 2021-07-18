@@ -5,6 +5,9 @@ import { BehaviorSubject, Subject, throwError } from "rxjs";
 import { stringify } from "querystring";
 import { User } from "./user.model";
 import { Router } from "@angular/router";
+import { Store } from "@ngrx/store";
+import * as fromApp from '../store/app.reducer';
+import * as AuthActions from './store/auth.actions';
 
 
 export interface AuthResponseData {
@@ -26,14 +29,18 @@ export class AuthService {
     // every time it reloads the page. the server will give it only when the authentication has succeeded.
     // To achieve this we can use BehaviourSubject, will can store the state and therefore it can store variables throughout its lifetime. 
     // we initialise it with null and will store the token here
-    userSubject = new BehaviorSubject<User>(null);
+    
+    //userSubject = new BehaviorSubject<User>(null);
     private tokenExpirationTimer : any;
 
-    constructor(private http: HttpClient, private router: Router){}
+    constructor(
+        private http: HttpClient, 
+        private router: Router,
+        private store: Store<fromApp.AppState>){}
 
     logout() {
         // pass the user as null, so the application treats it as unauthenticated:
-        this.userSubject.next(null);
+        this.store.dispatch(new AuthActions.Logout());
         this.router.navigate(['/auth']);
         // delete all data from local storage, since the token wont be active anymore
         localStorage.removeItem('userData');
@@ -88,7 +95,13 @@ export class AuthService {
             new Date(userData._tokenExpirationDate));
 
         if (loadedUser) {
-            this.userSubject.next(loadedUser);
+            this.store.dispatch(new AuthActions.Login({
+                email: loadedUser.email, 
+                userId: loadedUser.id, 
+                token: loadedUser.token, 
+                expirationDate: new Date(userData._tokenExpirationDate)
+                })
+            );
             // update the time the token expires if we login again. If we dont do this, expirationDuration in setTimeout will
             // restart its counting. 
             const expirationDuration = new Date(userData._tokenExpirationDate).getTime() - new Date().getTime();
@@ -130,9 +143,12 @@ export class AuthService {
                 expirationDate
             );
             
-
-            // Emit the user. 
-            this.userSubject.next(user);
+            this.store.dispatch(new AuthActions.Login({
+                email: email,
+                userId: userId,
+                token: token,
+                expirationDate: expirationDate
+            }))
 
             // It is important to notice that, once we create a new user, we want to auto logout since 
             // it wont make sense to use the user anymore
@@ -145,7 +161,7 @@ export class AuthService {
     }
 
     private handleError(errorRes: HttpErrorResponse){
-        let errorMessage = 'An unknown error occured!'; 
+        let errorMessage = errorRes.error.error.message;
 
         if (!errorRes.error || !errorRes.error.error) {
                     // returns an observable

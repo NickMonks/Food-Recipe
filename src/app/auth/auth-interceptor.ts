@@ -1,8 +1,9 @@
 import { Injectable } from "@angular/core";
 import { HttpHandler, HttpInterceptor, HttpParams, HttpRequest } from '@angular/common/http';
 import { AuthService } from "./auth.service";
-import { exhaustMap, take } from "rxjs/operators";
-
+import { exhaustMap, map, take } from "rxjs/operators";
+import { Store } from "@ngrx/store";
+import * as fromApp from '../store/app.reducer'
 @Injectable()
 export class AuthInterceptorService implements HttpInterceptor {
     // this class will implement an interceptor, which performs some transformations to any http request before send it to 
@@ -18,13 +19,19 @@ export class AuthInterceptorService implements HttpInterceptor {
     // After, it return another observable, and we can pipe it afterwards. we return that final value.
         
 
-    constructor(private authService: AuthService) {}
+    constructor(
+        private authService: AuthService,
+        private store: Store<fromApp.AppState>) {}
 
     intercept(req: HttpRequest<any>, next: HttpHandler) {
         // this is done so any time we want to access to a url route where authentication is needed, we provide our token
-        // we need to return an observable (where angular will be notified), 
-       return this.authService.userSubject.pipe(
-            take(1), 
+        // we need to return an observable (where angular will be notified), and the store provides it
+       return this.store.select('auth').pipe(
+            take(1),
+            // is not the user itself, is the store object!
+            map(authState => {
+               return authState.user;
+            }),
             exhaustMap(user => {
                 // before adding the auth token, verify there is actually a user (if we need to authenticate it will fail to login)
                 if (!user) {

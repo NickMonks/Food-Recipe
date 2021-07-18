@@ -1,7 +1,7 @@
-import { Component, ComponentFactoryResolver, OnInit, ViewChild } from '@angular/core';
+import { Component, ComponentFactoryResolver, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { AlertComponent } from '../shared/alert/alert.component';
 import { PlaceholderDirective } from '../shared/placeholder/placeholder.directive';
 import { AuthResponseData, AuthService } from './auth.service';
@@ -11,7 +11,7 @@ import { AuthResponseData, AuthService } from './auth.service';
   templateUrl: './auth.component.html',
   styleUrls: ['./auth.component.css']
 })
-export class AuthComponent implements OnInit {
+export class AuthComponent implements OnInit, OnDestroy {
 
   isLoginMode = true;
   isLoading = false;
@@ -20,6 +20,8 @@ export class AuthComponent implements OnInit {
   // ViewChild not also returns the reference; it also returns you the element of a type; in our case the Placeholder directive
   // it will return the first ocrurence. 
   @ViewChild(PlaceholderDirective, {static: false}) alertHost: PlaceholderDirective;
+
+  private closeSub: Subscription;
 
   constructor(private authService: AuthService,
               private router: Router,
@@ -36,25 +38,6 @@ export class AuthComponent implements OnInit {
   onHandleError() {
     console.log(this.error)
     this.error = null; // this will remove the condition of the ngIf and close the alert
-  }
-
-  private showErrorAlert(message: string) {
-    // dynamically create the alert component. to do so, we need to use the component factory resolver,
-    // which creates a factory that creates alerts
-   const alertComponentFactory = this.componentFactoryResolver.resolveComponentFactory(AlertComponent);
-
-   // tell angular were to insert component, you need to give the position to the DOM using the view reference
-   // because the PlaceholderDirective exposes the view container as an attribute in the constructor, we can access the element!
-   console.log(this.alertHost)
-   const hostViewContainerRef = this.alertHost.viewContainerRef
-
-   // clear anything rendered in the component before
-   hostViewContainerRef.clear();
-
-   hostViewContainerRef.createComponent(alertComponentFactory);
-
-
-
   }
 
   onSubmit(form: NgForm){
@@ -100,6 +83,41 @@ export class AuthComponent implements OnInit {
     
 
     form.reset();
+  }
+
+  private showErrorAlert(message: string) {
+    // dynamically create the alert component. to do so, we need to use the component factory resolver,
+    // which creates a factory that creates alerts
+   const alertComponentFactory = this.componentFactoryResolver.resolveComponentFactory(AlertComponent);
+
+   // tell angular were to insert component, you need to give the position to the DOM using the view reference
+   // because the PlaceholderDirective exposes the view container as an attribute in the constructor, we can access the element!
+   console.log(this.alertHost)
+   const hostViewContainerRef = this.alertHost.viewContainerRef;
+
+   // clear anything rendered in the component before
+   hostViewContainerRef.clear();
+
+   const componentRef = hostViewContainerRef.createComponent(alertComponentFactory);
+
+   // take the instance and select the property of the component
+   componentRef.instance.message = message;
+   this.closeSub =componentRef.instance.close.subscribe(
+     () => {
+       // basically we subscribe to the button, and when is emitted close this subscription
+       // AND clear the component
+      this.closeSub.unsubscribe();
+      hostViewContainerRef.clear();
+     }
+   );
+
+
+  }
+
+  ngOnDestroy() {
+    if (this.closeSub){
+      this.closeSub.unsubscribe();
+    }
   }
 
 }

@@ -1,13 +1,15 @@
 import { Injectable } from "@angular/core";
 import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from "@angular/router";
+import { Store } from "@ngrx/store";
 import { Observable } from "rxjs";
 import { map, take } from "rxjs/operators";
 import { AuthService } from "./auth.service";
+import * as fromApp from '../store/app.reducer'
 
 @Injectable({providedIn: 'root'})
 export class AuthGuard implements CanActivate {
 
-    constructor(private authService: AuthService, private router: Router) {}
+    constructor(private authService: AuthService, private router: Router, private store: Store<fromApp.AppState>) {}
 
     // We can use a route guard to run logic before going inside the router. We need to use it for our recipes,
     // since we want the user to be authenticated to get the recipes. 
@@ -18,8 +20,12 @@ export class AuthGuard implements CanActivate {
 
         // we take the observable and then map it to a simple function, that checks if the user exists or not (using the !! operator)
         // we want only to look this obsevable ONLY once; we want to check only ones and unsubscribe inmideately. To do this, we use take operator
-        return this.authService.userSubject.pipe(
+        return this.store.select('auth').pipe(
             take(1), 
+            // we get the user State, we need to map it
+            map(authState => {
+                return authState.user;
+            }),
             map(user => {
             const isAuth = !!user;
             if (isAuth) {
