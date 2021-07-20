@@ -69,10 +69,17 @@ export class AuthService {
                 password: password,
                 returnSecureToken: true
             }
-            ).pipe(catchError(this.handleError), tap(resData => {
+            )
+            .pipe(
+                catchError(this.handleError), 
+                tap(resData => {
                 // if the response is successful, we tap (i.e we don't change the post AuthResponseData) the data and use it
                 // for other stuff, that's how tap really is used
-                this.handleAuthentication(resData.email,resData.localId,resData.idToken, +resData.expiresIn);
+                this.handleAuthentication(
+                    resData.email,
+                    resData.localId,
+                    resData.idToken, 
+                    +resData.expiresIn);
             }));
     } 
 
@@ -95,7 +102,7 @@ export class AuthService {
             new Date(userData._tokenExpirationDate));
 
         if (loadedUser) {
-            this.store.dispatch(new AuthActions.Login({
+            this.store.dispatch(new AuthActions.AuthenticateSuccess({
                 email: loadedUser.email, 
                 userId: loadedUser.id, 
                 token: loadedUser.token, 
@@ -104,11 +111,11 @@ export class AuthService {
             );
             // update the time the token expires if we login again. If we dont do this, expirationDuration in setTimeout will
             // restart its counting. 
-            const expirationDuration = new Date(userData._tokenExpirationDate).getTime() - new Date().getTime();
+            const expirationDuration = new Date(
+                userData._tokenExpirationDate).getTime() - new Date().getTime();
+
             this.autoLogout(expirationDuration);
         }
-
-
     }
 
     logIn(email: string, password: string) {
@@ -143,7 +150,7 @@ export class AuthService {
                 expirationDate
             );
             
-            this.store.dispatch(new AuthActions.Login({
+            this.store.dispatch(new AuthActions.AuthenticateSuccess({
                 email: email,
                 userId: userId,
                 token: token,
