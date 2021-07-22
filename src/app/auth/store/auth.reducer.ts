@@ -21,7 +21,9 @@ const initialState : State = {
 // because if we call the reducer and the action is not in the current reducer called. It is important also to export all identifiers LOGIN, LOGOUT...
 // to be used accross all applications
 export function authReducer(state = initialState, action: AuthActions.AuthActions){
+    console.log(action.type)
     switch (action.type){
+        
         case AuthActions.AUTHENTICATE_SUCCESS:
             const user = new User(
                 action.payload.email,

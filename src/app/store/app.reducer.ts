@@ -1,5 +1,6 @@
 // merges all the reducers of the application
 import * as fromShoppingList from '../shopping-list/store/shopping-list.reducer'
+import * as fromRecipes from '../recipes/store/recipe.reducer'
 import * as fromAuth from '../auth/store/auth.reducer'
 import { ActionReducerMap } from '@ngrx/store'
 
@@ -7,11 +8,13 @@ import { ActionReducerMap } from '@ngrx/store'
 // And app interface corresponds to the object representing the reducerMap - a shopping list which is type state
 
 export interface AppState {
-    shoppingList : fromShoppingList.State,
-    auth: fromAuth.State
+    shoppingList : fromShoppingList.State;
+    auth: fromAuth.State;
+    recipes: fromRecipes.State;
 }
 
 export const appReducer: ActionReducerMap<AppState> = {
     shoppingList: fromShoppingList.shoppingListReducer,
-    auth: fromAuth.authReducer
+    auth: fromAuth.authReducer,
+    recipes: fromRecipes.recipeReducer
 }

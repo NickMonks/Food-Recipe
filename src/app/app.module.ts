@@ -16,6 +16,10 @@ import { Store, StoreModule } from '@ngrx/store'
 import { EffectsModule } from '@ngrx/effects';
 import * as fromApp from './store/app.reducer'
 import { AuthEffects } from './auth/store/auth.effects';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { environment } from '../environments/environment';
+import { RecipeEffects } from './recipes/store/recipe.effects';
+
 
 @NgModule({
   declarations: [
@@ -31,12 +35,13 @@ import { AuthEffects } from './auth/store/auth.effects';
     SharedModule,
     CoreModule,
     AuthModule,
+    StoreDevtoolsModule.instrument({logOnly: environment.production}),
     //in the root app module, we provide the store, and we need to create a HashMap of key: reducer for each module/Component/etc
     // now, every time we start the application it will create a store with the reducer defined
     // IMPORTANT: The reducer return value is basically was is associated to the shoppingList
     StoreModule.forRoot(fromApp.appReducer),
     // register the effect module to register effects
-    EffectsModule.forRoot([AuthEffects]),
+    EffectsModule.forRoot([AuthEffects, RecipeEffects]),
   ],
   bootstrap: [AppComponent],
   entryComponents: [
